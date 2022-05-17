@@ -40,53 +40,41 @@ def parseFile(filename):
         sys.exit(0)
 
     lines = file.readlines()[5:]
+    file.close()
     lines = [line.strip() for line in lines]
-
-    # Skip info lines in file
-    for _ in range(5):
-        file.readline()
-
-    line = file.readline().split(",")
-    country = line[0][1:-1]
-    countryCode = line[1][1:-1]
     
-    while True:
-        if line[3][1:-1] in INDICATOR_CODES:
+    for line in csv.reader(lines, quotechar='"', delimiter=',',
+                           quoting=csv.QUOTE_ALL, skipinitialspace=True):
 
-            print(f"Found {line[3]}")
+        # Save country info
+        if not country:
+            country = line[0]
+            countryCode = line[1]
+
+        if line[3] in INDICATOR_CODES:
 
             # Save indicator info
-            indicator = [line[3][1:-1], line[2][1:-1]]
+            indicator = [line[3], line[2]]
             indicators.append(indicator)
 
             # Save indicator data
             metrics = []
             for value in line[4:]:
-                # If value is not empty, add it
-                if value != "\"\"":
-                    metrics.append(value[1:-1])
-                else:
+                # If value is empty, add '-' instead
+                if not value:
                     metrics.append("-")
+                else:
+                    metrics.append(value)
             data.append(metrics)
 
             indicatorsLeft -= 1
             if indicatorsLeft == 0:
-                break
-        
-        nextLine = file.readline()
-        if not nextLine:
-            print("-WARNING- Not all selected indicators found!")
-            break
-        line = nextLine.split(",")
+                break   
+    else:    
+        print("-WARNING- Not all selected indicators found!")
 
-    print("Data parsed successfully\n")
-    print(f"{country} {countryCode}\n")
-
-    for i, d in zip(indicators, data):
-        print(f"{i[0]} {i[1]}")
-        print(*d)
-        print()
-
-    file.close()
+    print(f"Data for {country} parsed successfully\n")
+    return [country, countryCode, indicators, data]
+    
 
 parseFile("greece.csv")
